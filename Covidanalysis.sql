@@ -3,21 +3,21 @@ Select * FROM CovidDeaths where continent is not null order by location,date;
 Select Location, date, total_cases, new_cases, total_deaths, population From CovidDeaths Where continent is not null order by location,date;
 -- Total Cases vs Total Deaths
 -- Shows likelihood of dying if you contract covid in your country
-SELECT Location,date,total_cases,total_deaths,ROUND(CAST(total_deaths AS FLOAT) / CAST(total_cases AS FLOAT) * 100, 2) AS DeathPercentage FROM CovidDeaths WHERE continent IS NOT NULL ORDER BY location, date;
+ CREATE TABLE likelihood_death_country as SELECT Location,date,total_cases,total_deaths,ROUND(CAST(total_deaths AS FLOAT) / CAST(total_cases AS FLOAT) * 100, 2) AS DeathPercentage FROM CovidDeaths WHERE continent IS NOT NULL ORDER BY location, date;
 --Death Rate by Continent
-SELECT dea.continent,ROUND(SUM(CAST(dea.total_deaths AS INT)) * 100.0 / SUM(dea.population), 2) AS DeathRate FROM CovidDeaths dea WHERE dea.continent IS NOT NULL GROUP BY dea.continent ORDER BY DeathRate DESC;
+CREATE TABLE deathrate_continent as SELECT dea.continent,ROUND(SUM(CAST(dea.total_deaths AS INT)) * 100.0 / SUM(dea.population), 2) AS DeathRate FROM CovidDeaths dea WHERE dea.continent IS NOT NULL GROUP BY dea.continent ORDER BY DeathRate DESC;
 -- Total Cases vs Population
--- Shows what percentage of population infected with Covid
-Select Location, date, Population, total_cases, round(CAST(total_cases as FLOAT)/CAST (population as FLOAT)*100,2) as PercentPopulationInfected From CovidDeaths order by location,date;
--- Countries with Highest Infection Rate compared to Population
+-- Shows what percentage of population infected with Covid--
+ CREATE TABLE continent_infection as Select continent,Location, date, Population, total_cases, round(CAST(total_cases as FLOAT)/CAST (population as FLOAT)*100,2) as PercentPopulationInfected From CovidDeaths WHERE continent is not NULL and location not in ('World','European Union','International') order by continent,location,date;
+-- Countries with Highest Infection Rate compared to Population--
 Select Location, Population, MAX(total_cases) as HighestInfectionCount,round(MAX((CAST(total_cases AS FLOAT)/CAST (population as FLOAT))*100,2)) as PercentPopulationInfected From CovidDeaths Group by Location, Population order by PercentPopulationInfected desc;
 -- Countries with Highest Death Count per Population
 Select Location, MAX(cast(Total_deaths as int)) as TotalDeathCount From CovidDeaths Where continent is not null Group by Location order by TotalDeathCount desc;
 -- BREAKING RESULTS DOWN BY CONTINENT
--- Showing contintents with the highest death count per population
-Select continent, MAX(cast(Total_deaths as int)) as TotalDeathCount From CovidDeaths Where continent is not null Group by continent order by TotalDeathCount desc;
--- GLOBAL NUMBERS
-SELECT SUM(new_cases) AS TotalCases,SUM(CAST(new_deaths AS INT)) AS TotalDeaths,CASE WHEN SUM(new_cases) = 0 THEN 0 ELSE ROUND(SUM(CAST(new_deaths AS INT)) / SUM(new_cases) * 100, 2) END AS DeathPercentage FROM CovidDeaths WHERE continent IS NOT NULL;
+-- Showing contintents with the highest death count per population--
+Select continent, MAX(cast(Total_deaths as int)) as TotalDeathCount From CovidDeaths Where continent is not null and location not in ('World','European Union','International') Group by continent order by TotalDeathCount desc;
+-- GLOBAL NUMBERS--
+SELECT SUM(new_cases) AS TotalCases,SUM(CAST(new_deaths AS INT)) AS TotalDeaths,CASE WHEN SUM(new_cases) = 0 THEN 0 ELSE ROUND(SUM(CAST(new_deaths AS INT)) * 100.0 / NULLIF(SUM(new_cases), 0), 2) END AS DeathPercentage FROM CovidDeaths WHERE continent IS NOT NULL;
 --Top 10 countries by total death 
 SELECT location,MAX(CAST(total_deaths AS INT)) AS TotalDeaths FROM CovidDeaths WHERE continent IS NOT NULL GROUP BY location ORDER BY TotalDeaths DESc LIMIT 10;
 --Global Trends for Cases and Deaths
